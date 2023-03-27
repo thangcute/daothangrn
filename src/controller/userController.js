@@ -1,3 +1,4 @@
+import { json } from "body-parser";
 import userService from "../services/userService";
 let handleLogin = async (req, res) => {
   let email = req.body.email;
@@ -56,10 +57,24 @@ let handleDeleteUser = async (req, res) => {
   console.log(message);
   return res.status(200).json(message);
 };
+
+let getAllCode = async (req, res) => {
+  try {
+    let data = await userService.getAllCodeService(req.query.type);
+    return res.status(200).json(data);
+  } catch (error) {
+    console.log("get all code error: ", error);
+    return res.status(200).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
 module.exports = {
   handleLogin: handleLogin,
   handleGetAllUsers: handleGetAllUsers,
   handleCreateNewUser: handleCreateNewUser,
   handleEditUsers: handleEditUsers,
   handleDeleteUser: handleDeleteUser,
+  getAllCode: getAllCode,
 };
