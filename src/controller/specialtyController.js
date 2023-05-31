@@ -49,10 +49,29 @@ let handleDeleteSpecialty = async (req, res) => {
   console.log(message);
   return res.status(200).json(message);
 };
+let getDetailSpecialtyById = async (req, res) => {
+  try {
+    let id = req.query.id;
 
+    let specialties = await specialtyService.getDetailSpecialtyById(
+      id,
+      req.query.location
+    );
+
+    return res.status(200).json({
+      specialties,
+    });
+  } catch (error) {
+    return res.status(200).json({
+      errCode: -1,
+      errMessage: "error",
+    });
+  }
+};
 module.exports = {
   createSpecialty: createSpecialty,
   handleGetAllSpecialty: handleGetAllSpecialty,
   handleEditSpecialty: handleEditSpecialty,
   handleDeleteSpecialty: handleDeleteSpecialty,
+  getDetailSpecialtyById: getDetailSpecialtyById,
 };

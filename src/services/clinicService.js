@@ -1,12 +1,15 @@
 const { reject } = require("lodash");
 const db = require("../models");
+const Sequelize = require("sequelize");
+const Op = Sequelize.Op;
 
-let createSpecialty = (data) => {
+let createClinic = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
       if (
         !data.name ||
         !data.imageBase64 ||
+        !data.address ||
         !data.descriptionHTML ||
         !data.descriptionMarkdown
       ) {
@@ -15,9 +18,10 @@ let createSpecialty = (data) => {
           errMessage: "Missing parameter!",
         });
       } else {
-        await db.Specialty.create({
+        await db.Clinic.create({
           name: data.name,
           image: data.imageBase64,
+          address: data.address,
           descriptionMarkdown: data.descriptionMarkdown,
           descriptionHTML: data.descriptionHTML,
         });
@@ -31,12 +35,12 @@ let createSpecialty = (data) => {
     }
   });
 };
-let getAllSpecialty = (id) => {
+let getAllClinic = (id) => {
   return new Promise(async (resolve, reject) => {
     try {
       let data = "";
       if (id === "ALL") {
-        data = await db.Specialty.findAll();
+        data = await db.Clinic.findAll();
         if (data && data.length > 0) {
           data.map((item) => {
             item.image = new Buffer.from(item.image, "base64").toString(
@@ -48,7 +52,7 @@ let getAllSpecialty = (id) => {
       }
 
       if (id && id !== "ALL") {
-        data = await db.Specialty.findOne({
+        data = await db.Clinic.findOne({
           where: { id: id },
         });
         if (data && data.length > 0) {
@@ -72,31 +76,33 @@ let getAllSpecialty = (id) => {
   });
 };
 
-let updateSpecialtyData = (data) => {
+let updateClinicData = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
       if (
         !data.name ||
+        !data.imageBase64 ||
+        !data.address ||
         !data.descriptionHTML ||
-        !data.descriptionMarkdown ||
-        !data.imageBase64
+        !data.descriptionMarkdown
       ) {
         resolve({
           errCode: 2,
           errMessage: "Missing requied parameters!",
         });
       }
-      let specialty = await db.Specialty.findOne({
+      let clinic = await db.Clinic.findOne({
         where: { id: data.id },
         raw: false,
       });
-      if (specialty) {
-        specialty.name = data.name;
-        specialty.descriptionHTML = data.descriptionHTML;
-        specialty.descriptionMarkdown = data.descriptionMarkdown;
-        specialty.image = data.imageBase64;
+      if (clinic) {
+        clinic.name = data.name;
+        clinic.descriptionHTML = data.descriptionHTML;
+        clinic.descriptionMarkdown = data.descriptionMarkdown;
+        clinic.image = data.imageBase64;
+        clinic.address = data.address;
 
-        await specialty.save();
+        await clinic.save();
         // await db.User.save({
         //   firstName: data.firstName,
         //   lastName: data.lastName,
@@ -104,12 +110,12 @@ let updateSpecialtyData = (data) => {
         // });
         resolve({
           errCode: 0,
-          message: "Update the specialty succeed!",
+          message: "Update the clinic succeed!",
         });
       } else {
         resolve({
           errCode: 1,
-          errMessage: `specialty's not found!`,
+          errMessage: `clinic's not found!`,
         });
       }
     } catch (error) {
@@ -117,57 +123,57 @@ let updateSpecialtyData = (data) => {
     }
   });
 };
-let deleteSpecialty = (id) => {
+let deleteClinic = (id) => {
   return new Promise(async (resolve, reject) => {
-    let specialty = await db.Specialty.findOne({
+    let clinic = await db.Clinic.findOne({
       where: { id: id },
     });
-    if (!specialty) {
+    if (!clinic) {
       resolve({
         errCode: 2,
-        errMessage: `The specialty isn't exist`,
+        errMessage: `The clinic isn't exist`,
       });
     }
-    await db.Specialty.destroy({
+    await db.Clinic.destroy({
       where: { id: id },
     });
 
     resolve({
       errCode: 0,
-      message: "The specialty is deleted",
+      message: "The clinic is deleted",
     });
   });
 };
-let getDetailSpecialtyById = (inputId, location) => {
+let getDetailClinicById = (inputId) => {
   return new Promise(async (resolve, reject) => {
     try {
-      if (!inputId || !location) {
+      if (!inputId) {
         resolve({
           errCode: 1,
           errMessage: "Missing parameter!",
         });
       } else {
-        let data = await db.Specialty.findOne({
+        let data = await db.Clinic.findOne({
           where: {
             id: inputId,
           },
-          attributes: ["image", "descriptionHTML", "descriptionMarkdown"],
+          attributes: [
+            "name",
+            "image",
+            "address",
+            "descriptionHTML",
+            "descriptionMarkdown",
+          ],
         });
         if (data) {
-          let doctorSpecialty = [];
-          if (location === "ALL") {
-            doctorSpecialty = await db.Doctor_Info.findAll({
-              where: { specialtyId: inputId },
-              attributes: ["doctorId", "provinceId"],
-            });
-          } else {
-            doctorSpecialty = await db.Doctor_Info.findAll({
-              where: { specialtyId: inputId, provinceId: location },
-              attributes: ["doctorId", "provinceId"],
-            });
-          }
+          let doctorClinic = [];
 
-          data.doctorSpecialty = doctorSpecialty;
+          doctorClinic = await db.Doctor_Info.findAll({
+            where: { clinicId: inputId },
+            attributes: ["doctorId", "provinceId"],
+          });
+
+          data.doctorClinic = doctorClinic;
         } else data = {};
         resolve({
           errMessage: "OK",
@@ -180,11 +186,40 @@ let getDetailSpecialtyById = (inputId, location) => {
     }
   });
 };
+let getClinicByName = (name) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (!name) {
+        resolve({
+          errCode: 1,
+          errMessage: "Missing parameter!",
+        });
+      } else {
+        let data = await db.Clinic.findAll({
+          where: {
+            name: {
+              [Op.like]: `%${name}%`,
+            },
+          },
+        });
+
+        resolve({
+          errMessage: "OK",
+          errCode: 0,
+          data: data,
+        });
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
 
 module.exports = {
-  createSpecialty: createSpecialty,
-  getAllSpecialty: getAllSpecialty,
-  updateSpecialtyData: updateSpecialtyData,
-  deleteSpecialty: deleteSpecialty,
-  getDetailSpecialtyById: getDetailSpecialtyById,
+  createClinic: createClinic,
+  getAllClinic: getAllClinic,
+  updateClinicData: updateClinicData,
+  deleteClinic: deleteClinic,
+  getDetailClinicById: getDetailClinicById,
+  getClinicByName: getClinicByName,
 };

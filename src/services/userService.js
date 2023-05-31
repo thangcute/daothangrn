@@ -23,7 +23,14 @@ let handleUserLogin = (email, password) => {
         //user alraedy exist
 
         let user = await db.User.findOne({
-          attributes: ["email", "roleId", "password", "firstName", "lastName"],
+          attributes: [
+            "email",
+            "roleId",
+            "password",
+            "firstName",
+            "lastName",
+            "id",
+          ],
           where: { email: email },
           raw: true,
         });
@@ -223,6 +230,7 @@ let getAllCodeService = (typeInput) => {
     }
   });
 };
+
 module.exports = {
   handleUserLogin: handleUserLogin,
   checkUserEmail: checkUserEmail,
